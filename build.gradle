@@ -1,0 +1,68 @@
+buildscript {
+  repositories {
+    // TODO: remove after new build is published
+    mavenLocal().mavenContent {
+      includeModule("org.jetbrains.compose", "compose-gradle-plugin")
+    }
+    google()
+    jcenter()
+    maven { url "https://maven.pkg.jetbrains.space/public/p/compose/dev" }
+  }
+
+  dependencies {
+    // __LATEST_COMPOSE_RELEASE_VERSION__
+    classpath("org.jetbrains.compose:compose-gradle-plugin:0.4.0-build173")
+    classpath("com.android.tools.build:gradle:4.0.2")
+    // __KOTLIN_COMPOSE_VERSION__
+    classpath(group: 'org.jetbrains.kotlin', name: 'kotlin-gradle-plugin', version: '1.4.31')
+  }
+}
+plugins {
+  id 'org.jetbrains.kotlin.multiplatform' version '1.4.31'
+}
+apply plugin:"com.android.application"
+apply plugin:"org.jetbrains.compose"
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+  mavenCentral()
+  jcenter()
+  google()
+  maven { url "https://maven.pkg.jetbrains.space/public/p/compose/dev" }
+}
+
+android {
+  compileSdkVersion 29
+
+  defaultConfig {
+    applicationId "com.github.takahirom.compose"
+    minSdkVersion 21
+    targetSdkVersion 29
+
+    versionCode 1
+    versionName "1.0.0"
+  }
+}
+
+kotlin {
+  jvm()
+  android()
+
+  sourceSets {
+    commonMain {
+      dependencies {
+        implementation kotlin('stdlib-common')
+        implementation compose.runtime
+        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.3"
+      }
+    }
+    commonTest {
+      dependencies {
+        implementation kotlin('test-common')
+        implementation kotlin('test-annotations-common')
+      }
+    }
+  }
+}
