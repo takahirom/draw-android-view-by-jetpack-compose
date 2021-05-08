@@ -11,14 +11,14 @@ buildscript {
 
   dependencies {
     // __LATEST_COMPOSE_RELEASE_VERSION__
-    classpath("org.jetbrains.compose:compose-gradle-plugin:0.4.0-build173")
+    classpath("org.jetbrains.compose:compose-gradle-plugin:0.4.0-build188")
     classpath("com.android.tools.build:gradle:4.0.2")
     // __KOTLIN_COMPOSE_VERSION__
-    classpath(group: 'org.jetbrains.kotlin', name: 'kotlin-gradle-plugin', version: '1.4.31')
+    classpath(group: 'org.jetbrains.kotlin', name: 'kotlin-gradle-plugin', version: '1.4.32')
   }
 }
 plugins {
-  id 'org.jetbrains.kotlin.multiplatform' version '1.4.31'
+  id 'org.jetbrains.kotlin.multiplatform' version '1.4.32'
 }
 apply plugin:"com.android.application"
 apply plugin:"org.jetbrains.compose"
