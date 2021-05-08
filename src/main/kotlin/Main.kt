@@ -1,5 +1,6 @@
 package com.github.takahirom.compose
 
+import GlobalSnapshotManager
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
@@ -10,19 +11,45 @@ import androidx.compose.runtime.AbstractApplier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.Composition
-import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DefaultMonotonicFrameClock
+import androidx.compose.runtime.Recomposer
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-fun runApp(context: Context, composer: CompositionContext): FrameLayout {
+@OptIn(InternalCoroutinesApi::class)
+fun runApp(context: Context): FrameLayout {
+    val composer = Recomposer(Dispatchers.Main)
+
+    GlobalSnapshotManager.ensureStarted()
+    val mainScope = MainScope()
+    mainScope.launch(start = CoroutineStart.UNDISPATCHED) {
+        withContext(coroutineContext + DefaultMonotonicFrameClock) {
+            composer.runRecomposeAndApplyChanges()
+        }
+    }
+    mainScope.launch {
+        composer.state.collect {
+            println("composer:$it")
+        }
+    }
+
     val rootDocument = FrameLayout(context)
-    rootDocument.setContent(composer) {
-        CompositionLocalProvider(localContext provides context) {
-            AndroidViewApp()
+    Composition(ViewApplier(rootDocument), composer).apply {
+        setContent {
+            CompositionLocalProvider(localContext provides context) {
+                AndroidViewApp()
+            }
         }
     }
     return rootDocument
@@ -32,6 +59,9 @@ fun runApp(context: Context, composer: CompositionContext): FrameLayout {
 private fun AndroidViewApp() {
     var count by remember { mutableStateOf(1) }
     LinearLayout {
+        TextView(
+            text = "This is the Android TextView!!",
+        )
         repeat(count) {
             TextView(
                 text = "Android View!!TextView:$it $count",
@@ -45,17 +75,11 @@ private fun AndroidViewApp() {
 
 val localContext = compositionLocalOf<Context> { TODO() }
 
-fun FrameLayout.setContent(
-    parent: CompositionContext,
-    content: @Composable () -> Unit
-): Composition {
-    return Composition(ViewApplier(this), parent).apply {
-        setContent(content)
-    }
-}
-
 @Composable
-fun TextView(text: String, onClick: () -> Unit) {
+fun TextView(
+    text: String,
+    onClick: () -> Unit = {}
+) {
     val context = localContext.current
     ComposeNode<TextView, ViewApplier>(
         factory = {
