@@ -2,30 +2,24 @@ package com.github.takahirom.compose
 
 import GlobalSnapshotManager
 import android.content.Context
-import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.compose.runtime.AbstractApplier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.Composition
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DefaultMonotonicFrameClock
 import androidx.compose.runtime.Recomposer
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+
+data class Node(val children: MutableList<Node>)
 
 @OptIn(InternalCoroutinesApi::class)
 fun runApp(context: Context): FrameLayout {
@@ -45,85 +39,53 @@ fun runApp(context: Context): FrameLayout {
     }
 
     val rootDocument = FrameLayout(context)
-    Composition(ViewApplier(rootDocument), composer).apply {
+    val node = Node(mutableListOf())
+    Composition(TextApplier(node), composer).apply {
         setContent {
-            CompositionLocalProvider(localContext provides context) {
-                AndroidViewApp()
+            Node()
+        }
+    }
+    mainScope.launch {
+        var nodeString = ""
+        while (true) {
+            val newNodeString = node.toString()
+            if (nodeString != newNodeString) {
+                nodeString = newNodeString
+                println(nodeString)
             }
+            delay(100)
         }
     }
     return rootDocument
 }
 
 @Composable
-private fun AndroidViewApp() {
-    var count by remember { mutableStateOf(1) }
-    LinearLayout {
-        TextView(
-            text = "This is the Android TextView!!",
-        )
-        repeat(count) {
-            TextView(
-                text = "Android View!!TextView:$it $count",
-                onClick = {
-                    count++
-                }
-            )
-        }
-    }
-}
-
-val localContext = compositionLocalOf<Context> { TODO() }
-
-@Composable
-fun TextView(
-    text: String,
-    onClick: () -> Unit = {}
-) {
-    val context = localContext.current
-    ComposeNode<TextView, ViewApplier>(
+private fun Node() {
+    ComposeNode<Node, TextApplier>(
         factory = {
-            TextView(context)
+            Node(mutableListOf())
         },
         update = {
-            set(text) {
-                this.text = text
-            }
-            set(onClick) {
-                setOnClickListener { onClick() }
-            }
+//            set(text) {
+//                this.text = text
+//            }
+//            set(onClick) {
+//                setOnClickListener { onClick() }
+//            }
         },
     )
 }
 
-@Composable
-fun LinearLayout(children: @Composable () -> Unit) {
-    val context = localContext.current
-    ComposeNode<LinearLayout, ViewApplier>(
-        factory = {
-            LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                )
-            }
-        },
-        update = {},
-        content = children,
-    )
-}
-
-class ViewApplier(val view: FrameLayout) : AbstractApplier<View>(view) {
+class TextApplier(node: Node) : AbstractApplier<Node>(node) {
     override fun onClear() {
-        (view as? ViewGroup)?.removeAllViews()
+        current.children.clear()
     }
 
-    override fun insertBottomUp(index: Int, instance: View) {
-        (current as? ViewGroup)?.addView(instance, index)
+    override fun insertBottomUp(index: Int, instance: Node) {
+        current.children.add(index, instance)
     }
 
-    override fun insertTopDown(index: Int, instance: View) {
+    override fun insertTopDown(index: Int, instance: Node) {
     }
 
     override fun move(from: Int, to: Int, count: Int) {
@@ -132,6 +94,6 @@ class ViewApplier(val view: FrameLayout) : AbstractApplier<View>(view) {
     }
 
     override fun remove(index: Int, count: Int) {
-        (view as? ViewGroup)?.removeViews(index, count)
+        current.children.remove(index, count)
     }
 }

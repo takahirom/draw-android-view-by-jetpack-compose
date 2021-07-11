@@ -11,7 +11,7 @@ buildscript {
 
   dependencies {
     // __LATEST_COMPOSE_RELEASE_VERSION__
-    classpath("org.jetbrains.compose:compose-gradle-plugin:0.4.0-build188")
+    classpath("org.jetbrains.compose:compose-gradle-plugin:0.4.0-build198")
     classpath("com.android.tools.build:gradle:4.0.2")
     // __KOTLIN_COMPOSE_VERSION__
     classpath(group: 'org.jetbrains.kotlin', name: 'kotlin-gradle-plugin', version: '1.4.32')
@@ -43,6 +43,12 @@ android {
 
     versionCode 1
     versionName "1.0.0"
+  }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+  kotlinOptions {
+    jvmTarget = "1.8"
   }
 }
 
